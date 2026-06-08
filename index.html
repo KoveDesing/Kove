@@ -1,0 +1,1263 @@
+import { useState, useEffect, useRef } from "react";
+
+// ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── MONOCHROMATIC PREMIUM PALETTE ── */
+  :root {
+    --bg:           #F4F4F5;
+    --bg2:          #EBEBEC;
+    --card:         #FFFFFF;
+    --text:         #0A0A0A;
+    --text2:        #71717A;
+    --text3:        #A1A1AA;
+    --accent:       #0A0A0A;          /* primary action: pure black */
+    --accent-hover: #1F1F1F;
+    --metal:        #D4D4D8;          /* metallic mid-gray */
+    --metal-light:  #E4E4E7;
+    --shadow-sm:    rgba(0,0,0,0.04);
+    --shadow-md:    rgba(0,0,0,0.08);
+    --shadow-lg:    rgba(0,0,0,0.14);
+    --glass:        rgba(255,255,255,0.62);
+    --glass-border: rgba(255,255,255,0.8);
+    --divider:      rgba(0,0,0,0.07);
+    --radius:       20px;
+    --transition:   all 0.45s cubic-bezier(0.23,1,0.32,1);
+  }
+
+  [data-theme="dark"] {
+    --bg:           #0A0A0A;
+    --bg2:          #111113;
+    --card:         #171719;
+    --text:         #FAFAFA;
+    --text2:        #A1A1AA;
+    --text3:        #52525B;
+    --accent:       #FFFFFF;
+    --accent-hover: #E4E4E7;
+    --metal:        #3F3F46;
+    --metal-light:  #27272A;
+    --shadow-sm:    rgba(0,0,0,0.2);
+    --shadow-md:    rgba(0,0,0,0.35);
+    --shadow-lg:    rgba(0,0,0,0.5);
+    --glass:        rgba(23,23,25,0.72);
+    --glass-border: rgba(255,255,255,0.07);
+    --divider:      rgba(255,255,255,0.06);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.45s ease, color 0.45s ease;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--metal); border-radius: 10px; }
+
+  /* ── GLASS CARD ── */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 24px var(--shadow-sm), 0 1px 0 rgba(255,255,255,0.6) inset;
+    border-radius: var(--radius);
+  }
+  [data-theme="dark"] .glass {
+    box-shadow: 0 4px 24px var(--shadow-md), 0 1px 0 rgba(255,255,255,0.05) inset;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes float  { 0%,100%{transform:translateY(0)}    50%{transform:translateY(-10px)} }
+  @keyframes float2 { 0%,100%{transform:translateY(0) rotate(-1.5deg)} 50%{transform:translateY(-7px) rotate(1.5deg)} }
+  @keyframes float3 { 0%,100%{transform:translateY(0) scale(1)}  50%{transform:translateY(-5px) scale(1.015)} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.9)} }
+  @keyframes spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  @keyframes scaleIn{ from{opacity:0;transform:scale(0.88)} to{opacity:1;transform:scale(1)} }
+  @keyframes orb1   { 0%,100%{transform:translate(0,0) scale(1)}  33%{transform:translate(50px,-35px) scale(1.08)} 66%{transform:translate(-25px,45px) scale(0.94)} }
+  @keyframes orb2   { 0%,100%{transform:translate(0,0) scale(1)}  33%{transform:translate(-45px,25px) scale(0.92)} 66%{transform:translate(35px,-55px) scale(1.04)} }
+  @keyframes shimmer{ 0%{opacity:0.3} 50%{opacity:0.7} 100%{opacity:0.3} }
+
+  .animate-float  { animation: float  6s ease-in-out infinite; }
+  .animate-float2 { animation: float2 8s ease-in-out infinite; }
+  .animate-float3 { animation: float3 5s ease-in-out infinite; }
+  .animate-fadeUp { animation: fadeUp 0.85s cubic-bezier(0.23,1,0.32,1) forwards; }
+  .animate-fadeIn { animation: fadeIn 0.6s ease forwards; }
+  .animate-scaleIn{ animation: scaleIn 0.5s cubic-bezier(0.23,1,0.32,1) forwards; }
+
+  /* ── PRIMARY BUTTON (black/white) ── */
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 0.93rem;
+    letter-spacing: -0.02em;
+    padding: 14px 32px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px var(--shadow-lg);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+
+  /* ── GHOST BUTTON ── */
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.93rem;
+    letter-spacing: -0.02em;
+    padding: 13px 32px;
+    border-radius: 100px;
+    border: 1.5px solid var(--metal);
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-ghost:hover {
+    border-color: var(--text);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow-md);
+  }
+
+  /* ── SECTION REVEAL ── */
+  .reveal { opacity:0; transform:translateY(36px); transition: opacity 0.85s cubic-bezier(0.23,1,0.32,1), transform 0.85s cubic-bezier(0.23,1,0.32,1); }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+`;
+
+// ─── THEME TOGGLE ──────────────────────────────────────────────────────────────
+function ThemeToggle({ dark, onToggle }) {
+  return (
+    <button onClick={onToggle} aria-label="Toggle theme" style={{
+      width: 50, height: 26,
+      background: dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+      border: `1.5px solid ${dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.14)'}`,
+      borderRadius: 100, cursor: 'pointer', position: 'relative',
+      transition: 'all 0.4s cubic-bezier(0.23,1,0.32,1)', flexShrink: 0,
+    }}>
+      <span style={{
+        position: 'absolute', top: 2,
+        left: dark ? 'calc(100% - 23px)' : 2,
+        width: 18, height: 18,
+        background: dark ? '#FAFAFA' : '#0A0A0A',
+        borderRadius: '50%',
+        transition: 'all 0.4s cubic-bezier(0.23,1,0.32,1)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 9, color: dark ? '#0A0A0A' : '#FAFAFA',
+      }}>{dark ? '○' : '●'}</span>
+    </button>
+  );
+}
+
+// ─── HEADER ───────────────────────────────────────────────────────────────────
+function Header({ dark, setDark, currentView, setView }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', h);
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+
+  const navItems = ['Inicio','Servicios','Portafolio','Academy','Contacto'];
+
+  return (
+    <header style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: scrolled ? '0 32px' : '10px 32px',
+      transition: 'padding 0.4s ease',
+    }}>
+      {/* Glass bg */}
+      <div className="glass" style={{
+        position: 'absolute', inset: 0,
+        borderRadius: scrolled ? 0 : '0 0 24px 24px',
+        margin: scrolled ? 0 : '0',
+        opacity: scrolled ? 0.97 : 0.85,
+        transition: 'all 0.4s ease',
+        zIndex: -1,
+      }} />
+
+      {/* Logo */}
+      <div onClick={() => setView('home')} style={{
+        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9,
+        fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.04em', color: 'var(--text)',
+        padding: '16px 0',
+      }}>
+        <span style={{
+          width: 28, height: 28, background: 'var(--text)', borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 900, color: 'var(--bg)',
+        }}>K</span>
+        KOVE
+      </div>
+
+      {/* Nav */}
+      <nav style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        {navItems.map(item => (
+          <button key={item} onClick={() => item === 'Academy' ? setView('academy') : setView('home')} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: currentView === 'academy' && item === 'Academy' ? 'var(--text)' : 'var(--text2)',
+            fontWeight: currentView === 'academy' && item === 'Academy' ? 700 : 500,
+            fontSize: '0.88rem', letterSpacing: '-0.01em',
+            padding: '8px 14px', borderRadius: 100,
+            transition: 'all 0.2s ease', fontFamily: 'Inter, sans-serif',
+          }}
+          onMouseEnter={e => { e.target.style.color = 'var(--text)'; e.target.style.background = 'var(--shadow-sm)'; }}
+          onMouseLeave={e => { e.target.style.color = currentView === 'academy' && item === 'Academy' ? 'var(--text)' : 'var(--text2)'; e.target.style.background = 'none'; }}
+          >{item}</button>
+        ))}
+      </nav>
+
+      {/* Right */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '16px 0' }}>
+        <ThemeToggle dark={dark} onToggle={() => setDark(!dark)} />
+        <button onClick={() => setView('auth')} className="btn-primary" style={{ padding: '9px 22px', fontSize: '0.83rem' }}>
+          Registrarse
+        </button>
+      </div>
+    </header>
+  );
+}
+
+// ─── HERO ─────────────────────────────────────────────────────────────────────
+function Hero({ setView }) {
+  const stats = [
+    { label: 'Clientes', value: '120+', icon: '◈' },
+    { label: 'Proyectos', value: '350+', icon: '⬡' },
+    { label: 'Automatizaciones', value: '80+', icon: '✦' },
+    { label: 'Satisfacción', value: '99%', icon: '◉' },
+  ];
+
+  return (
+    <section style={{
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden', padding: '120px 24px 80px',
+    }}>
+      {/* Monochromatic orbs */}
+      {[
+        { size: 560, op: 0.06, top: '5%',  left: '0%',   anim: 'orb1 22s ease-in-out infinite' },
+        { size: 420, op: 0.04, top: '45%', right: '0%',  anim: 'orb2 28s ease-in-out infinite' },
+        { size: 300, op: 0.05, bottom: '5%', left: '35%',anim: 'orb1 18s ease-in-out infinite reverse' },
+      ].map((o, i) => (
+        <div key={i} style={{
+          position: 'absolute', width: o.size, height: o.size, borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(0,0,0,${o.op}) 0%, transparent 70%)`,
+          top: o.top, left: o.left, right: o.right, bottom: o.bottom,
+          animation: o.anim, pointerEvents: 'none',
+        }} />
+      ))}
+      {/* Dark mode orbs */}
+      {[
+        { size: 560, op: 0.25, top: '5%',  left: '0%',   anim: 'orb1 22s ease-in-out infinite' },
+        { size: 420, op: 0.18, top: '45%', right: '0%',  anim: 'orb2 28s ease-in-out infinite' },
+      ].map((o, i) => (
+        <div key={`d${i}`} style={{
+          position: 'absolute', width: o.size, height: o.size, borderRadius: '50%',
+          background: `radial-gradient(circle, rgba(255,255,255,${o.op}) 0%, transparent 70%)`,
+          top: o.top, left: o.left, right: o.right, bottom: o.bottom,
+          animation: o.anim, pointerEvents: 'none', opacity: 0,
+        }} />
+      ))}
+
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: 860, width: '100%', textAlign: 'center' }}>
+        {/* Badge */}
+        <div className="animate-fadeUp" style={{ marginBottom: 28 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '7px 18px', borderRadius: 100,
+            fontSize: '0.75rem', fontWeight: 600, color: 'var(--text2)',
+            border: '1px solid var(--divider)',
+            background: 'var(--card)',
+            letterSpacing: '0.04em', textTransform: 'uppercase',
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text)', display: 'inline-block', animation: 'pulse 2.5s infinite' }} />
+            Ecosistema Digital Premium
+          </span>
+        </div>
+
+        {/* Title */}
+        <h1 className="animate-fadeUp" style={{
+          fontSize: 'clamp(5rem, 14vw, 10rem)', fontWeight: 800,
+          letterSpacing: '-0.055em', lineHeight: 0.88,
+          color: 'var(--text)', marginBottom: 12,
+          animationDelay: '0.08s',
+        }}>KOVE</h1>
+
+        <p className="animate-fadeUp" style={{
+          fontSize: 'clamp(1rem, 2.5vw, 1.4rem)', fontWeight: 300,
+          letterSpacing: '0.22em', color: 'var(--text2)', marginBottom: 24,
+          textTransform: 'uppercase', animationDelay: '0.16s',
+        }}>Make It Real</p>
+
+        <p className="animate-fadeUp" style={{
+          fontSize: '1rem', fontWeight: 400, color: 'var(--text2)',
+          maxWidth: 520, margin: '0 auto 44px', lineHeight: 1.7,
+          letterSpacing: '-0.01em', animationDelay: '0.24s',
+        }}>
+          Construimos experiencias digitales, automatizaciones, inteligencia artificial,
+          branding y desarrollo web para empresas y emprendedores.
+        </p>
+
+        {/* CTAs */}
+        <div className="animate-fadeUp" style={{
+          display: 'flex', gap: 14, justifyContent: 'center',
+          flexWrap: 'wrap', marginBottom: 72, animationDelay: '0.32s',
+        }}>
+          <button className="btn-primary" onClick={() => setView('auth')}>Comenzar →</button>
+          <button className="btn-ghost">Ver Portafolio</button>
+        </div>
+
+        {/* Stats */}
+        <div className="animate-fadeUp" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14,
+          maxWidth: 680, margin: '0 auto', animationDelay: '0.4s',
+        }}>
+          {stats.map((s, i) => (
+            <div key={i} className="glass animate-float" style={{
+              padding: '20px 14px', textAlign: 'center',
+              animationDelay: `${i * 0.6}s`,
+            }}>
+              <div style={{ fontSize: '1.1rem', color: 'var(--text3)', marginBottom: 8 }}>{s.icon}</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>{s.value}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text3)', fontWeight: 500, marginTop: 3, letterSpacing: '0.02em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── SERVICES ─────────────────────────────────────────────────────────────────
+function Services() {
+  const services = [
+    { icon: '✦', title: 'Diseño Gráfico',       desc: 'Identidades visuales que comunican y conectan con tu audiencia de forma memorable.', tag: 'Creative' },
+    { icon: '⬡', title: 'Desarrollo Web',        desc: 'Aplicaciones y sitios de alto rendimiento con las tecnologías más avanzadas del mercado.', tag: 'Tech' },
+    { icon: '◈', title: 'Automatización',         desc: 'Flujos automáticos que multiplican la productividad y eliminan tareas repetitivas.', tag: 'Efficiency' },
+    { icon: '●', title: 'Inteligencia Artificial',desc: 'Soluciones con IA que transforman cómo operan los negocios modernos.', tag: 'AI' },
+    { icon: '◉', title: 'Branding',               desc: 'Marcas con propósito que perduran en la mente y generan confianza real.', tag: 'Brand' },
+    { icon: '▲', title: 'Marketing Digital',      desc: 'Estrategias de crecimiento que generan resultados medibles y sostenibles.', tag: 'Growth' },
+  ];
+
+  const [visible, setVisible] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} style={{ padding: '110px 24px', maxWidth: 1200, margin: '0 auto' }}>
+      <div className={`reveal ${visible ? 'visible' : ''}`} style={{ textAlign: 'center', marginBottom: 64 }}>
+        <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.18em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 18 }}>Lo que hacemos</p>
+        <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 800, letterSpacing: '-0.045em', lineHeight: 1.05 }}>
+          Servicios para<br />negocios que crecen
+        </h2>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+        {services.map((s, i) => (
+          <div key={i}
+            className={`glass reveal ${visible ? 'visible' : ''} reveal-delay-${(i % 4) + 1}`}
+            style={{ padding: '36px 30px', cursor: 'pointer', transition: 'all 0.35s cubic-bezier(0.23,1,0.32,1)', position: 'relative', overflow: 'hidden' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 20px 50px var(--shadow-md)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}
+          >
+            {/* Subtle grain texture accent */}
+            <div style={{ position: 'absolute', top: 0, right: 0, width: 120, height: 120, borderRadius: '0 20px 0 120px', background: 'var(--shadow-sm)', pointerEvents: 'none' }} />
+
+            <div style={{
+              display: 'inline-flex', padding: '10px 12px',
+              background: 'var(--bg2)', borderRadius: 12, marginBottom: 20,
+              fontSize: '1.2rem', color: 'var(--text2)',
+            }}>{s.icon}</div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, letterSpacing: '-0.025em' }}>{s.title}</h3>
+              <span style={{
+                fontSize: '0.6rem', fontWeight: 700, padding: '3px 8px',
+                background: 'var(--divider)', color: 'var(--text3)',
+                borderRadius: 100, letterSpacing: '0.06em', textTransform: 'uppercase',
+              }}>{s.tag}</span>
+            </div>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text2)', lineHeight: 1.65, letterSpacing: '-0.01em' }}>{s.desc}</p>
+            <div style={{ marginTop: 22, fontSize: '0.82rem', color: 'var(--text3)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+              Saber más <span style={{ transition: 'transform 0.2s' }}>→</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── PORTFOLIO ────────────────────────────────────────────────────────────────
+function Portfolio() {
+  const projects = [
+    { title: 'NexoFinance',  cat: 'Web App',        bg: '#0A0A0A', pat: 'dots' },
+    { title: 'OceanBreath',  cat: 'Branding',        bg: '#111113', pat: 'lines' },
+    { title: 'PulseStore',   cat: 'E-commerce',      bg: '#1A1A1C', pat: 'grid' },
+    { title: 'VerdeLab',     cat: 'IA + Automation', bg: '#141414', pat: 'dots' },
+    { title: 'AuroraCRM',    cat: 'SaaS',            bg: '#0F0F10', pat: 'lines' },
+    { title: 'SwiftPay',     cat: 'Fintech',         bg: '#131315', pat: 'grid' },
+  ];
+
+  const patterns = {
+    dots:  'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
+    lines: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 12px)',
+    grid:  'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+  };
+  const patternSizes = { dots: '20px 20px', lines: 'auto', grid: '24px 24px' };
+
+  const [visible, setVisible] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} style={{ padding: '110px 24px', background: 'var(--card)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, var(--metal), transparent)', opacity: 0.5 }} />
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div className={`reveal ${visible ? 'visible' : ''}`} style={{ textAlign: 'center', marginBottom: 64 }}>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.18em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 18 }}>Nuestro trabajo</p>
+          <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 800, letterSpacing: '-0.045em' }}>Portafolio</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+          {projects.map((p, i) => (
+            <div key={i}
+              className={`reveal ${visible ? 'visible' : ''} reveal-delay-${(i % 3) + 1}`}
+              style={{
+                height: 250, borderRadius: 18, background: p.bg,
+                backgroundImage: patterns[p.pat], backgroundSize: patternSizes[p.pat],
+                position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                transition: 'transform 0.35s cubic-bezier(0.23,1,0.32,1)',
+                border: '1px solid rgba(255,255,255,0.05)',
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.025)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <div style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, padding: '28px 22px',
+                background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)',
+              }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{p.cat}</span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#FAFAFA', letterSpacing: '-0.03em', marginTop: 4 }}>{p.title}</h3>
+              </div>
+              <div style={{
+                position: 'absolute', top: 14, right: 14, width: 32, height: 32,
+                background: 'rgba(255,255,255,0.08)', borderRadius: 9,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)',
+              }}>↗</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── ACADEMY SECTION ──────────────────────────────────────────────────────────
+function AcademySection({ setView }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const modules = ['Diseño Gráfico','Desarrollo Web','IA & Automatización','Branding','Marketing Digital','Negocios Digitales'];
+  const icons = ['✦','⬡','●','◈','▲','◉'];
+
+  return (
+    <section ref={ref} style={{ padding: '110px 24px', maxWidth: 1200, margin: '0 auto' }}>
+      <div style={{
+        borderRadius: 28, background: 'var(--text)',
+        padding: 'clamp(44px, 6vw, 76px)', position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Subtle light grain */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '20px 20px', pointerEvents: 'none', borderRadius: 28 }} />
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 52, alignItems: 'center', position: 'relative' }}>
+          {/* Left */}
+          <div className={`reveal ${visible ? 'visible' : ''}`}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>KOVE Academy</span>
+            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, letterSpacing: '-0.045em', color: '#FAFAFA', lineHeight: 1.08, marginBottom: 20 }}>
+              Aprende habilidades<br />digitales reales
+            </h2>
+            <p style={{ fontSize: '0.92rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.72, marginBottom: 36 }}>
+              Diseño, desarrollo, IA, branding, marketing y negocios digitales. Aprende, practica y monetiza tus habilidades desde el primer día.
+            </p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 36 }}>
+              {['Gamificado','Certificados','KOVE AI'].map(f => (
+                <span key={f} style={{
+                  padding: '7px 16px', background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 100, fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.7)',
+                }}>{f}</span>
+              ))}
+            </div>
+            <button onClick={() => setView('academy')} style={{
+              background: '#FAFAFA', color: '#0A0A0A', fontWeight: 700,
+              fontSize: '0.9rem', padding: '13px 28px', borderRadius: 100, border: 'none',
+              cursor: 'pointer', transition: 'all 0.3s ease', display: 'inline-flex', alignItems: 'center', gap: 8,
+              fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#E4E4E7'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >Entrar a Academy →</button>
+          </div>
+
+          {/* Right — modules grid */}
+          <div className={`reveal ${visible ? 'visible' : ''} reveal-delay-2`} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {modules.map((m, i) => (
+              <div key={i} className="animate-float3" style={{
+                padding: '18px 16px',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 16, animationDelay: `${i * 0.45}s`,
+              }}>
+                <div style={{ width: 30, height: 30, borderRadius: 9, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginBottom: 10 }}>{icons[i]}</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.8)', letterSpacing: '-0.01em', marginBottom: 10 }}>{m}</div>
+                <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 100 }}>
+                  <div style={{ width: `${[65,80,45,70,55,60][i]}%`, height: '100%', background: 'rgba(255,255,255,0.4)', borderRadius: 100 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── TESTIMONIALS ─────────────────────────────────────────────────────────────
+function Testimonials() {
+  const testimonials = [
+    { name: 'Ana García',    role: 'CEO, NexoFinance',    text: 'KOVE transformó completamente nuestra presencia digital. El equipo entiende exactamente lo que necesitas antes de que lo digas.', avatar: 'AG' },
+    { name: 'Carlos Mendez', role: 'Fundador, PulseStore', text: 'La academia de KOVE me permitió aprender diseño desde cero y lanzar mi negocio en 3 meses. Increíble experiencia.', avatar: 'CM' },
+    { name: 'Laura Torres',  role: 'Marketing Dir.',       text: 'Las automatizaciones que implementaron redujeron nuestro tiempo operativo un 70%. ROI inmediato y tangible.', avatar: 'LT' },
+  ];
+
+  const [visible, setVisible] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} style={{ padding: '110px 24px', maxWidth: 1200, margin: '0 auto' }}>
+      <div className={`reveal ${visible ? 'visible' : ''}`} style={{ textAlign: 'center', marginBottom: 64 }}>
+        <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.18em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 18 }}>Testimonios</p>
+        <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', fontWeight: 800, letterSpacing: '-0.045em' }}>Lo que dicen<br />nuestros clientes</h2>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18 }}>
+        {testimonials.map((t, i) => (
+          <div key={i} className={`glass reveal ${visible ? 'visible' : ''} reveal-delay-${i+1} animate-float`} style={{ padding: '32px', animationDelay: `${i * 1.2}s` }}>
+            <div style={{ display: 'flex', gap: 3, marginBottom: 20 }}>
+              {Array(5).fill(0).map((_,j) => <span key={j} style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>★</span>)}
+            </div>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.72, color: 'var(--text2)', marginBottom: 24, fontStyle: 'italic' }}>"{t.text}"</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'var(--text)', color: 'var(--bg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.02em',
+              }}>{t.avatar}</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.87rem', color: 'var(--text)' }}>{t.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>{t.role}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ─── CONTACT ──────────────────────────────────────────────────────────────────
+function Contact() {
+  const [form, setForm] = useState({ name:'', email:'', message:'' });
+  const [sent, setSent] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const handleSubmit = () => {
+    setSent(true);
+    setTimeout(() => { setSent(false); setForm({ name:'', email:'', message:'' }); }, 4000);
+  };
+
+  const inputStyle = {
+    width: '100%', padding: '13px 16px',
+    background: 'var(--bg)', border: '1.5px solid var(--divider)',
+    borderRadius: 12, fontSize: '0.92rem', color: 'var(--text)',
+    outline: 'none', fontFamily: 'Inter, sans-serif',
+    transition: 'border-color 0.2s ease', display: 'block',
+  };
+
+  return (
+    <section ref={ref} style={{ padding: '110px 24px', background: 'var(--card)', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, var(--metal), transparent)', opacity: 0.5 }} />
+      <div style={{ maxWidth: 640, margin: '0 auto' }}>
+        <div className={`reveal ${visible ? 'visible' : ''}`} style={{ textAlign: 'center', marginBottom: 52 }}>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.18em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 18 }}>Contacto</p>
+          <h2 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', fontWeight: 800, letterSpacing: '-0.045em' }}>Hablemos de<br />tu proyecto</h2>
+        </div>
+
+        <div className={`glass reveal ${visible ? 'visible' : ''} reveal-delay-1`} style={{ padding: 'clamp(32px, 5vw, 52px)' }}>
+          {sent ? (
+            <div className="animate-scaleIn" style={{ textAlign: 'center', padding: '48px 0' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.3rem', color: 'var(--bg)' }}>✓</div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 8 }}>Mensaje enviado</h3>
+              <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Te contactaremos a la brevedad posible.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {[{key:'name',label:'Nombre',placeholder:'Tu nombre',type:'text'},{key:'email',label:'Correo',placeholder:'tu@email.com',type:'email'}].map(f => (
+                <div key={f.key}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)', marginBottom: 7, letterSpacing: '-0.01em' }}>{f.label}</label>
+                  <input type={f.type} placeholder={f.placeholder} value={form[f.key]} onChange={e => setForm({...form,[f.key]:e.target.value})} style={inputStyle}
+                    onFocus={e => e.target.style.borderColor = 'var(--text)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+                </div>
+              ))}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text2)', marginBottom: 7 }}>Mensaje</label>
+                <textarea rows={5} placeholder="Cuéntanos sobre tu proyecto..." value={form.message} onChange={e => setForm({...form,message:e.target.value})} style={{...inputStyle, resize:'vertical'}}
+                  onFocus={e => e.target.style.borderColor = 'var(--text)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+              </div>
+              <button className="btn-primary" onClick={handleSubmit} style={{ alignSelf: 'flex-start' }}>Enviar mensaje →</button>
+
+              <div style={{ display: 'flex', gap: 20, paddingTop: 14, borderTop: '1px solid var(--divider)' }}>
+                {[
+                  { href: 'https://wa.me/573152507850?text=Hola KOVE. Estoy interesado en sus servicios.', label: 'WhatsApp' },
+                  { href: 'mailto:kovedesign2026@gmail.com', label: 'Email' },
+                ].map(l => (
+                  <a key={l.label} href={l.href} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text3)', textDecoration: 'none', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--text3)'}>{l.label} ↗</a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── FOOTER ───────────────────────────────────────────────────────────────────
+function Footer({ setView }) {
+  return (
+    <footer style={{ padding: '64px 24px 32px', borderTop: '1px solid var(--divider)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
+          <div>
+            <div onClick={() => setView('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 9, fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.04em', marginBottom: 14 }}>
+              <span style={{ width: 26, height: 26, background: 'var(--text)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>K</span>
+              KOVE
+            </div>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text2)', lineHeight: 1.72, maxWidth: 260 }}>
+              Ecosistema digital premium. Transformamos negocios con tecnología, diseño e inteligencia artificial.
+            </p>
+          </div>
+          {[
+            { title: 'Servicios', links: ['Diseño Gráfico','Desarrollo Web','Automatización','IA','Branding'] },
+            { title: 'Academy',  links: ['Cursos','Certificaciones','KOVE AI','Recursos','Comunidad'] },
+            { title: 'KOVE',     links: ['Portafolio','Casos de éxito','Contacto','Blog','Careers'] },
+          ].map(col => (
+            <div key={col.title}>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 16, letterSpacing: '-0.015em' }}>{col.title}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {col.links.map(l => (
+                  <span key={l} style={{ fontSize: '0.82rem', color: 'var(--text3)', cursor: 'pointer', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--text3)'}>{l}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 24, borderTop: '1px solid var(--divider)' }}>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text3)' }}>© 2026 KOVE. Make It Real.</span>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text3)' }}>kovedesign2026@gmail.com</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// ─── AUTH VIEW ────────────────────────────────────────────────────────────────
+function AuthView({ setView }) {
+  const [mode, setMode] = useState('register');
+  const [form, setForm] = useState({ name:'', email:'', password:'' });
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSubmit = () => {
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setDone(true); }, 1400);
+    setTimeout(() => setView('dashboard'), 2400);
+  };
+
+  const inputStyle = {
+    width: '100%', padding: '13px 16px',
+    background: 'var(--bg)', border: '1.5px solid var(--divider)',
+    borderRadius: 12, fontSize: '0.92rem', color: 'var(--text)',
+    outline: 'none', fontFamily: 'Inter, sans-serif',
+    transition: 'border-color 0.2s ease',
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', position: 'relative', overflow: 'hidden', background: 'var(--bg)' }}>
+      {/* Orbs monochromatic */}
+      <div style={{ position: 'absolute', top: '18%', left: '18%', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, transparent 70%)', animation: 'orb1 22s ease-in-out infinite', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '18%', right: '14%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.04) 0%, transparent 70%)', animation: 'orb2 18s ease-in-out infinite', pointerEvents: 'none' }} />
+
+      <div className="glass animate-scaleIn" style={{ width: '100%', maxWidth: 430, padding: '48px 40px', position: 'relative' }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <span style={{ width: 34, height: 34, background: 'var(--text)', borderRadius: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 900, color: 'var(--bg)' }}>K</span>
+            <span style={{ fontWeight: 800, fontSize: '1.4rem', letterSpacing: '-0.04em' }}>KOVE</span>
+          </div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text3)' }}>
+            {mode === 'register' ? 'Crea tu cuenta gratuita' : 'Bienvenido de vuelta'}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', background: 'var(--bg2)', borderRadius: 100, padding: 4, marginBottom: 26 }}>
+          {['register','login'].map(m => (
+            <button key={m} onClick={() => setMode(m)} style={{
+              flex: 1, padding: '9px', borderRadius: 100, border: 'none', cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.85rem',
+              background: mode === m ? 'var(--card)' : 'transparent',
+              color: mode === m ? 'var(--text)' : 'var(--text3)',
+              boxShadow: mode === m ? '0 2px 8px var(--shadow-sm)' : 'none',
+              transition: 'all 0.3s ease',
+            }}>{m === 'register' ? 'Registrarse' : 'Iniciar sesión'}</button>
+          ))}
+        </div>
+
+        {/* Google */}
+        <button className="btn-ghost" style={{ width: '100%', justifyContent: 'center', marginBottom: 22, fontSize: '0.88rem', padding: '11px 20px' }}>
+          <span style={{ fontWeight: 800 }}>G</span> Continuar con Google
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--divider)' }} />
+          <span style={{ fontSize: '0.75rem', color: 'var(--text3)', fontWeight: 500 }}>o con correo</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--divider)' }} />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 22 }}>
+          {mode === 'register' && (
+            <input placeholder="Tu nombre" value={form.name} onChange={e => setForm({...form,name:e.target.value})} style={inputStyle}
+              onFocus={e => e.target.style.borderColor = 'var(--text)'}
+              onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+          )}
+          <input type="email" placeholder="tu@email.com" value={form.email} onChange={e => setForm({...form,email:e.target.value})} style={inputStyle}
+            onFocus={e => e.target.style.borderColor = 'var(--text)'}
+            onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+          <input type="password" placeholder="Contraseña" value={form.password} onChange={e => setForm({...form,password:e.target.value})} style={inputStyle}
+            onFocus={e => e.target.style.borderColor = 'var(--text)'}
+            onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+        </div>
+
+        <button className="btn-primary" onClick={handleSubmit} style={{ width: '100%', justifyContent: 'center', padding: '13px' }}>
+          {loading ? <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⟳</span>
+            : done ? '✓ Redirigiendo...'
+            : mode === 'register' ? 'Crear cuenta →' : 'Iniciar sesión →'}
+        </button>
+
+        <p style={{ textAlign: 'center', marginTop: 18, fontSize: '0.76rem', color: 'var(--text3)' }}>
+          Al continuar aceptas los <span style={{ color: 'var(--text2)', cursor: 'pointer', textDecoration: 'underline' }}>Términos de servicio</span>
+        </p>
+        <button onClick={() => setView('home')} style={{ display: 'block', margin: '14px auto 0', background: 'none', border: 'none', color: 'var(--text3)', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif', transition: 'color 0.2s' }}
+          onMouseEnter={e => e.target.style.color = 'var(--text)'}
+          onMouseLeave={e => e.target.style.color = 'var(--text3)'}>← Volver al inicio</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function DashboardView({ setView }) {
+  const [activeSection, setActiveSection] = useState('home');
+  const [aiMsg, setAiMsg] = useState('');
+  const [aiChat, setAiChat] = useState([
+    { role: 'ai', text: 'Hola Erick 👋\nSoy KOVE AI. Estoy aquí para ayudarte a aprender más rápido.' }
+  ]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const chatEndRef = useRef();
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [aiChat, aiLoading]);
+
+  const user = { name: 'Erick', xp: 340, level: 3, streak: 7, plan: 'PRO', progress: 42 };
+  const modules = [
+    { title: 'Diseño Gráfico',        icon: '✦', progress: 65, lessons: 12, total: 18 },
+    { title: 'Desarrollo Web',         icon: '⬡', progress: 80, lessons: 16, total: 20 },
+    { title: 'IA & Automatización',    icon: '●', progress: 30, lessons: 6,  total: 20 },
+    { title: 'Branding',               icon: '◈', progress: 0,  lessons: 0,  total: 15 },
+    { title: 'Marketing Digital',      icon: '▲', progress: 45, lessons: 9,  total: 20 },
+    { title: 'Negocios Digitales',     icon: '◉', progress: 20, lessons: 3,  total: 15 },
+  ];
+  const achievements = [
+    { icon: '◈', title: 'Primer módulo',         done: true },
+    { icon: '✦', title: '7 días de racha',        done: true },
+    { icon: '⬡', title: 'Primera evaluación',     done: true },
+    { icon: '▲', title: '30 días de racha',       done: false },
+    { icon: '◉', title: 'Primer certificado',     done: false },
+    { icon: '●', title: 'Nivel 5',                done: false },
+  ];
+
+  const sendAI = async () => {
+    if (!aiMsg.trim()) return;
+    const userMsg = aiMsg;
+    setAiMsg('');
+    setAiChat(prev => [...prev, { role: 'user', text: userMsg }]);
+    setAiLoading(true);
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'Eres KOVE AI, el asistente de aprendizaje de KOVE Academy. Ayudas a estudiantes con diseño gráfico, desarrollo web, inteligencia artificial, branding, marketing digital y negocios digitales. Responde en español, de forma amigable, clara y motivadora. Sé conciso pero completo.',
+          messages: [{ role: 'user', content: userMsg }],
+        }),
+      });
+      const data = await res.json();
+      const reply = data.content?.find(b => b.type === 'text')?.text || 'Lo siento, intenta de nuevo.';
+      setAiChat(prev => [...prev, { role: 'ai', text: reply }]);
+    } catch {
+      setAiChat(prev => [...prev, { role: 'ai', text: 'Error de conexión. Intenta de nuevo.' }]);
+    }
+    setAiLoading(false);
+  };
+
+  const sidebarItems = [
+    { id: 'home',         icon: '⊞', label: 'Dashboard' },
+    { id: 'modules',      icon: '▦', label: 'Módulos' },
+    { id: 'ai',           icon: '◈', label: 'KOVE AI' },
+    { id: 'achievements', icon: '✦', label: 'Logros' },
+    { id: 'profile',      icon: '◉', label: 'Perfil' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg)' }}>
+      {/* Sidebar */}
+      <aside style={{
+        width: 232, flexShrink: 0, display: 'flex', flexDirection: 'column',
+        padding: '24px 14px', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
+        background: 'var(--card)',
+        borderRight: '1px solid var(--divider)',
+      }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 28, paddingLeft: 6 }}>
+          <span style={{ width: 30, height: 30, background: 'var(--text)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, color: 'var(--bg)' }}>K</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.03em', lineHeight: 1 }}>KOVE</div>
+            <div style={{ fontSize: '0.58rem', color: 'var(--text3)', fontWeight: 700, letterSpacing: '0.08em' }}>ACADEMY</div>
+          </div>
+        </div>
+
+        {/* User card */}
+        <div style={{ padding: '14px', background: 'var(--bg)', borderRadius: 14, marginBottom: 22, textAlign: 'center', border: '1px solid var(--divider)' }}>
+          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--text)', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', color: 'var(--bg)' }}>E</div>
+          <div style={{ fontWeight: 700, fontSize: '0.87rem', letterSpacing: '-0.01em' }}>{user.name}</div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text3)', marginTop: 2 }}>Nivel {user.level} · {user.xp} XP</div>
+          <span style={{ display: 'inline-block', marginTop: 8, padding: '2px 10px', background: 'var(--text)', borderRadius: 100, fontSize: '0.6rem', fontWeight: 700, color: 'var(--bg)', letterSpacing: '0.06em' }}>PRO</span>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {sidebarItems.map(item => (
+            <button key={item.id} onClick={() => setActiveSection(item.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 12px', borderRadius: 12,
+              border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+              fontWeight: 600, fontSize: '0.85rem', letterSpacing: '-0.01em',
+              background: activeSection === item.id ? 'var(--text)' : 'transparent',
+              color: activeSection === item.id ? 'var(--bg)' : 'var(--text2)',
+              transition: 'all 0.2s ease', textAlign: 'left',
+            }}
+            onMouseEnter={e => { if (activeSection !== item.id) { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.color = 'var(--text)'; } }}
+            onMouseLeave={e => { if (activeSection !== item.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
+            >
+              <span style={{ fontSize: '0.9rem', opacity: activeSection === item.id ? 1 : 0.7 }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Bottom */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 16, borderTop: '1px solid var(--divider)' }}>
+          <a href="https://wa.me/573152507850?text=Hola KOVE. Estoy estudiando en KOVE Academy y necesito ayuda." target="_blank" rel="noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--divider)', color: 'var(--text2)', textDecoration: 'none', fontSize: '0.82rem', fontWeight: 600, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text2)'; e.currentTarget.style.borderColor = 'var(--divider)'; }}>
+            Soporte ↗
+          </a>
+          <button onClick={() => setView('home')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.82rem', color: 'var(--text3)', background: 'transparent', textAlign: 'left', transition: 'color 0.2s' }}
+            onMouseEnter={e => e.target.style.color = 'var(--text)'}
+            onMouseLeave={e => e.target.style.color = 'var(--text3)'}>
+            ← Salir
+          </button>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main style={{ marginLeft: 232, flex: 1, padding: '36px', minHeight: '100vh', overflowY: 'auto' }}>
+
+        {/* DASHBOARD HOME */}
+        {activeSection === 'home' && (
+          <div className="animate-fadeUp">
+            <div style={{ marginBottom: 32 }}>
+              <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 4 }}>Bienvenido, {user.name}</h1>
+              <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Listo para seguir creciendo hoy.</p>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 28 }}>
+              {[
+                { label: 'XP Total',  value: user.xp,          icon: '✦' },
+                { label: 'Nivel',     value: user.level,        icon: '◈' },
+                { label: 'Racha',     value: `${user.streak}d`, icon: '●' },
+                { label: 'Progreso',  value: `${user.progress}%`,icon: '▲' },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: '20px 18px', background: 'var(--card)', borderRadius: 16, border: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', color: 'var(--text2)' }}>{s.icon}</div>
+                  <div>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, letterSpacing: '-0.035em' }}>{s.value}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text3)', fontWeight: 500 }}>{s.label}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* XP bar */}
+            <div style={{ padding: '22px', background: 'var(--card)', borderRadius: 16, border: '1px solid var(--divider)', marginBottom: 28 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Nivel {user.level} → Nivel {user.level + 1}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text3)' }}>{user.xp} / 500 XP</span>
+              </div>
+              <div style={{ height: 7, background: 'var(--bg2)', borderRadius: 100, overflow: 'hidden' }}>
+                <div style={{ width: `${user.xp / 500 * 100}%`, height: '100%', background: 'var(--text)', borderRadius: 100 }} />
+              </div>
+            </div>
+
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 14 }}>Continuar aprendiendo</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+              {modules.slice(0,3).map((m, i) => (
+                <div key={i} style={{ padding: '20px', background: 'var(--card)', border: '1px solid var(--divider)', borderRadius: 16, cursor: 'pointer', transition: 'all 0.22s ease' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'var(--text)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--divider)'; }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                    <span style={{ fontSize: '1rem', color: 'var(--text2)' }}>{m.icon}</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', letterSpacing: '-0.01em' }}>{m.title}</span>
+                  </div>
+                  <div style={{ height: 4, background: 'var(--bg2)', borderRadius: 100, marginBottom: 8 }}>
+                    <div style={{ width: `${m.progress}%`, height: '100%', background: 'var(--text)', borderRadius: 100 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text3)' }}>
+                    <span>{m.lessons}/{m.total} lecciones</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text2)' }}>{m.progress}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MODULES */}
+        {activeSection === 'modules' && (
+          <div className="animate-fadeUp">
+            <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>Módulos</h1>
+            <p style={{ color: 'var(--text2)', marginBottom: 28, fontSize: '0.9rem' }}>Explora todos los cursos disponibles</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16 }}>
+              {modules.map((m, i) => (
+                <div key={i} style={{ padding: '26px', background: 'var(--card)', border: '1px solid var(--divider)', borderRadius: 18, cursor: 'pointer', transition: 'all 0.25s ease', position: 'relative', overflow: 'hidden' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'var(--text)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'var(--divider)'; }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: 'var(--text2)' }}>{m.icon}</div>
+                      <div>
+                        <h3 style={{ fontWeight: 700, fontSize: '0.95rem', letterSpacing: '-0.02em' }}>{m.title}</h3>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text3)' }}>{m.total} lecciones</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '3px 10px', background: 'var(--bg2)', color: 'var(--text3)', borderRadius: 100, letterSpacing: '0.04em' }}>
+                      {m.progress === 100 ? '✓ Listo' : m.progress > 0 ? 'En progreso' : 'Comenzar'}
+                    </span>
+                  </div>
+                  <div style={{ height: 5, background: 'var(--bg2)', borderRadius: 100, marginBottom: 8 }}>
+                    <div style={{ width: `${m.progress}%`, height: '100%', background: 'var(--text)', borderRadius: 100, transition: 'width 0.8s ease' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text3)' }}>
+                    <span>{m.lessons} de {m.total} completadas</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text2)' }}>{m.progress}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* KOVE AI */}
+        {activeSection === 'ai' && (
+          <div className="animate-fadeUp" style={{ height: 'calc(100vh - 72px)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ marginBottom: 20 }}>
+              <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 4 }}>KOVE AI</h1>
+              <p style={{ color: 'var(--text2)', fontSize: '0.9rem' }}>Tu asistente de aprendizaje personal</p>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--card)', borderRadius: 20, border: '1px solid var(--divider)', overflow: 'hidden' }}>
+              <div style={{ flex: 1, padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {aiChat.map((msg, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', gap: 10 }}>
+                    {msg.role === 'ai' && (
+                      <div style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: 'var(--bg)', flexShrink: 0, marginTop: 4 }}>AI</div>
+                    )}
+                    <div style={{
+                      maxWidth: '68%', padding: '12px 16px',
+                      borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                      background: msg.role === 'user' ? 'var(--text)' : 'var(--bg)',
+                      color: msg.role === 'user' ? 'var(--bg)' : 'var(--text)',
+                      fontSize: '0.88rem', lineHeight: 1.65, whiteSpace: 'pre-wrap',
+                      fontWeight: msg.role === 'user' ? 500 : 400,
+                      border: msg.role === 'ai' ? '1px solid var(--divider)' : 'none',
+                    }}>{msg.text}</div>
+                  </div>
+                ))}
+                {aiLoading && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: 'var(--bg)' }}>AI</div>
+                    <div style={{ display: 'flex', gap: 5, padding: '12px 16px', background: 'var(--bg)', border: '1px solid var(--divider)', borderRadius: '18px 18px 18px 4px' }}>
+                      {[0,1,2].map(j => <span key={j} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text3)', display: 'inline-block', animation: `pulse 1.2s ease ${j*0.2}s infinite` }} />)}
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+              <div style={{ padding: '14px 20px', borderTop: '1px solid var(--divider)', display: 'flex', gap: 10 }}>
+                <input value={aiMsg} onChange={e => setAiMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendAI()}
+                  placeholder="Pregúntale algo a KOVE AI..."
+                  style={{ flex: 1, padding: '12px 16px', background: 'var(--bg)', border: '1.5px solid var(--divider)', borderRadius: 100, fontSize: '0.9rem', color: 'var(--text)', outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--text)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--divider)'} />
+                <button className="btn-primary" onClick={sendAI} style={{ padding: '12px 22px', fontSize: '0.88rem' }}>→</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ACHIEVEMENTS */}
+        {activeSection === 'achievements' && (
+          <div className="animate-fadeUp">
+            <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 8 }}>Logros</h1>
+            <p style={{ color: 'var(--text2)', marginBottom: 28, fontSize: '0.9rem' }}>Tu progreso y reconocimientos</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+              {achievements.map((a, i) => (
+                <div key={i} style={{ padding: '28px', background: 'var(--card)', border: `1px solid ${a.done ? 'var(--text)' : 'var(--divider)'}`, borderRadius: 18, textAlign: 'center', opacity: a.done ? 1 : 0.45, transition: 'transform 0.2s ease' }}
+                  onMouseEnter={e => a.done && (e.currentTarget.style.transform = 'translateY(-4px)')}
+                  onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+                  <div style={{ fontSize: '2rem', marginBottom: 12, color: 'var(--text)' }}>{a.icon}</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: 10, letterSpacing: '-0.01em' }}>{a.title}</div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '4px 12px', background: a.done ? 'var(--text)' : 'var(--bg2)', color: a.done ? 'var(--bg)' : 'var(--text3)', borderRadius: 100, letterSpacing: '0.04em' }}>
+                    {a.done ? '✓ Obtenido' : 'Bloqueado'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PROFILE */}
+        {activeSection === 'profile' && (
+          <div className="animate-fadeUp">
+            <h1 style={{ fontSize: '1.9rem', fontWeight: 800, letterSpacing: '-0.04em', marginBottom: 28 }}>Perfil</h1>
+            <div style={{ padding: '36px', background: 'var(--card)', border: '1px solid var(--divider)', borderRadius: 20, maxWidth: 520 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 28, paddingBottom: 28, borderBottom: '1px solid var(--divider)' }}>
+                <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'var(--text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.6rem', color: 'var(--bg)' }}>E</div>
+                <div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 4 }}>{user.name}</h2>
+                  <p style={{ color: 'var(--text3)', fontSize: '0.82rem', marginBottom: 8 }}>erick@email.com</p>
+                  <span style={{ display: 'inline-block', padding: '2px 12px', background: 'var(--text)', borderRadius: 100, fontSize: '0.65rem', fontWeight: 700, color: 'var(--bg)', letterSpacing: '0.06em' }}>PRO</span>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {[
+                  { label: 'XP Total',      value: `${user.xp} XP` },
+                  { label: 'Nivel actual',   value: `Nivel ${user.level}` },
+                  { label: 'Racha actual',   value: `${user.streak} días` },
+                  { label: 'Módulos activos',value: '2 activos' },
+                ].map(s => (
+                  <div key={s.label} style={{ padding: '16px', background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--divider)' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginBottom: 5 }}>{s.label}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+// ─── ACADEMY LANDING ──────────────────────────────────────────────────────────
+function AcademyLanding({ setView }) {
+  return (
+    <div>
+      <section style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px', position: 'relative', overflow: 'hidden', textAlign: 'center' }}>
+        {/* Monochromatic orbs */}
+        <div style={{ position: 'absolute', top: '15%', left: '10%', width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.05) 0%, transparent 70%)', animation: 'orb1 22s ease-in-out infinite', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%)', animation: 'orb2 18s ease-in-out infinite', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 700 }}>
+          <div className="animate-fadeUp" style={{ marginBottom: 22 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '7px 18px', borderRadius: 100, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text)', background: 'var(--card)', border: '1px solid var(--divider)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              KOVE Academy
+            </span>
+          </div>
+
+          <h1 className="animate-fadeUp" style={{ fontSize: 'clamp(2.5rem, 8vw, 5.5rem)', fontWeight: 800, letterSpacing: '-0.055em', lineHeight: 0.93, marginBottom: 22, animationDelay: '0.1s' }}>
+            Aprende habilidades<br />digitales reales
+          </h1>
+
+          <p className="animate-fadeUp" style={{ fontSize: '1rem', color: 'var(--text2)', lineHeight: 1.72, marginBottom: 44, animationDelay: '0.2s' }}>
+            Diseño gráfico, desarrollo web, inteligencia artificial, branding,<br />automatización, marketing y negocios digitales.
+          </p>
+
+          {/* Plans */}
+          <div className="animate-fadeUp" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 520, margin: '0 auto 36px', animationDelay: '0.3s' }}>
+            <div className="glass" style={{ padding: '28px 22px', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>Gratuito</div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.045em', marginBottom: 4 }}>$0</div>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text2)', marginBottom: 20, lineHeight: 1.65 }}>1 módulo, comunidad y contenido básico.</p>
+              <button className="btn-ghost" onClick={() => setView('auth')} style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: '0.83rem' }}>Comenzar</button>
+            </div>
+            <div className="glass" style={{ padding: '28px 22px', textAlign: 'left', borderColor: 'var(--text)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--text)' }} />
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>PRO</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.045em' }}>$10.000</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>COP/mes</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text3)', textDecoration: 'line-through', marginBottom: 16 }}>$50.000 COP</div>
+              <button className="btn-primary" onClick={() => setView('auth')} style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: '0.83rem' }}>Acceder PRO →</button>
+            </div>
+          </div>
+
+          <div className="animate-fadeUp" style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', animationDelay: '0.4s' }}>
+            {['Gamificado','Certificados','KOVE AI','Móvil'].map(f => (
+              <span key={f} style={{ fontSize: '0.82rem', color: 'var(--text3)', fontWeight: 500 }}>· {f}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ─── WHATSAPP FLOAT ───────────────────────────────────────────────────────────
+function WhatsAppFloat({ view }) {
+  const msg = (view === 'academy' || view === 'dashboard')
+    ? 'Hola KOVE. Estoy estudiando en KOVE Academy y necesito ayuda.'
+    : 'Hola KOVE. Estoy interesado en sus servicios.';
+
+  return (
+    <a href={`https://wa.me/573152507850?text=${encodeURIComponent(msg)}`} target="_blank" rel="noreferrer" style={{
+      position: 'fixed', bottom: 28, right: 28, zIndex: 2000,
+      width: 52, height: 52, borderRadius: '50%',
+      background: 'var(--text)', color: 'var(--bg)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      boxShadow: '0 8px 28px var(--shadow-lg)', fontSize: '1.1rem',
+      textDecoration: 'none', fontWeight: 700, fontFamily: 'Inter, sans-serif',
+      transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1)',
+      animation: 'float 5s ease-in-out infinite',
+      border: '1px solid var(--glass-border)',
+    }}
+    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+    >↗</a>
+  );
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+export default function KoveApp() {
+  const [dark, setDark] = useState(false);
+  const [view, setView] = useState('home');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  return (
+    <>
+      <style>{globalStyles}</style>
+      {view !== 'dashboard' && <Header dark={dark} setDark={setDark} currentView={view} setView={setView} />}
+      {view === 'home'      && <main><Hero setView={setView} /><Services /><Portfolio /><AcademySection setView={setView} /><Testimonials /><Contact /><Footer setView={setView} /></main>}
+      {view === 'academy'   && <main><AcademyLanding setView={setView} /></main>}
+      {view === 'auth'      && <AuthView setView={setView} />}
+      {view === 'dashboard' && <DashboardView setView={setView} />}
+      <WhatsAppFloat view={view} />
+    </>
+  );
+}
